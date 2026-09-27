@@ -41,7 +41,7 @@ export default function AdminDiscussions() {
     { key: 'title', label: 'Question', render: r => (
       <div>
         <p className="font-semibold text-slate-900 line-clamp-1">{r.title}</p>
-        <p className="text-xs text-slate-400 mt-0.5">by {r.uploadedBy?.displayName || 'Student'} · {new Date(r.createdAt).toLocaleDateString()}</p>
+        <p className="text-xs text-slate-400 mt-0.5">by {r.uploadedBy?.displayName || 'Student'} ({r.uploadedBy?.rollNo || 'N/A'}) · {new Date(r.createdAt).toLocaleDateString()}</p>
       </div>
     )},
     { key: 'replies', label: 'Replies', render: r => (

@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { adminApi } from '../../api/researchVaultAdminApi';
+import ConfirmDialog from './components/ConfirmDialog';
 import StatusBadge from './components/StatusBadge';
-import { X } from 'lucide-react';
+import { X, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const STATUS_TABS = [
@@ -67,6 +68,7 @@ export default function AdminExperienceQueue() {
   const [queue, setQueue] = useState([]);
   const [loading, setLoading] = useState(true);
   const [rejectTarget, setRejectTarget] = useState(null);
+  const [viewComments, setViewComments] = useState(null); // id of experience to show comments
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -89,6 +91,16 @@ export default function AdminExperienceQueue() {
       load();
     } catch (e) {
       toast.error(e.response?.data?.message || 'Could not publish.');
+    }
+  };
+
+  const deleteComment = async (commentId) => {
+    try {
+      await adminApi.deleteExperienceComment(commentId);
+      toast.success('Comment deleted.');
+      load();
+    } catch {
+      toast.error('Could not delete comment.');
     }
   };
 
@@ -141,6 +153,39 @@ export default function AdminExperienceQueue() {
                       <p className="text-xs text-rose-600 mt-0.5">{entry.rejectionReason}</p>
                     </div>
                   )}
+
+                  {/* Comments section toggle */}
+                  {(entry.comments?.length > 0 || entry._count?.comments > 0) && (
+                    <div className="mt-4 pt-3 border-t border-slate-100">
+                      <button
+                        onClick={() => setViewComments(viewComments === entry.id ? null : entry.id)}
+                        className="text-xs font-semibold text-slate-600 hover:text-slate-900 transition-colors"
+                      >
+                        {viewComments === entry.id ? 'Hide comments' : `View ${entry.comments?.length || entry._count?.comments} comments`}
+                      </button>
+
+                      {viewComments === entry.id && entry.comments && (
+                        <div className="mt-3 space-y-2">
+                          {entry.comments.map(c => (
+                            <div key={c.id} className="rounded-lg bg-slate-50 p-3 flex justify-between gap-3 group">
+                              <div>
+                                <p className="text-xs font-bold text-slate-700">{c.uploadedBy?.displayName || 'Student'} <span className="font-normal text-slate-400">· {new Date(c.createdAt).toLocaleDateString()}</span></p>
+                                <p className="text-sm text-slate-600 mt-1">{c.content}</p>
+                              </div>
+                              <button
+                                onClick={() => deleteComment(c.id)}
+                                className="opacity-0 group-hover:opacity-100 p-1.5 text-slate-400 hover:text-rose-600 transition-all"
+                                title="Delete comment"
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                 </div>
                 {status === 'DRAFT' && (
                   <div className="flex shrink-0 gap-2">

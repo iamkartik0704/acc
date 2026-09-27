@@ -18,6 +18,7 @@ export const adminApi = {
   getModerationQueue: (params) => api.get('/admin/experiences', { params }),
   publishExperience: (id) => api.put(`/experiences/${id}`, { status: 'PUBLISHED' }),
   rejectExperience: (id, reason) => api.delete(`/experiences/${id}`, { data: { reason } }),
+  deleteExperienceComment: (id) => api.delete(`/experience-comments/${id}`),
 
   // Research Areas
   listAreas: (params) => api.get('/areas', { params }),

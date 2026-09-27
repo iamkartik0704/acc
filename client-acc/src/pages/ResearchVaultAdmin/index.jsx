@@ -68,21 +68,23 @@ export default function ResearchVaultAdmin() {
       </header>
 
       <nav className="vault-tabs flex items-center gap-2 overflow-x-auto px-1 pb-1 scrollbar-none" aria-label="Research administration sections">
-        {TABS.map(({ id, label, icon: Icon }) => (
-          // eslint-disable-next-line no-unused-vars
-          <button
-            key={id}
-            onClick={() => setSection(id)}
-            className={`flex shrink-0 items-center gap-2 border-b-2 px-3 py-3 text-sm font-semibold transition-colors ${
-              section === id
-                ? 'border-emerald-700 text-emerald-800'
-                : 'border-transparent text-slate-500 hover:text-slate-900 hover:border-slate-300'
-            }`}
-          >
-            <Icon size={16} />
-            <span>{label}</span>
-          </button>
-        ))}
+        {TABS.map((tab) => {
+          const Icon = tab.icon;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => setSection(tab.id)}
+              className={`flex shrink-0 items-center gap-2 border-b-2 px-3 py-3 text-sm font-semibold transition-colors ${
+                section === tab.id
+                  ? 'border-emerald-700 text-emerald-800'
+                  : 'border-transparent text-slate-500 hover:text-slate-900 hover:border-slate-300'
+              }`}
+            >
+              <Icon size={16} />
+              <span>{tab.label}</span>
+            </button>
+          );
+        })}
       </nav>
 
       <main className="min-h-[400px]">

@@ -45,7 +45,8 @@ const experienceInclude = {
   faculty: { select: { id: true, name: true, slug: true, department: true } },
   uploadedBy: userSummary,
   researchAreas: { include: { researchArea: true } },
-  _count: { select: { likes: true, bookmarks: true } }
+  _count: { select: { likes: true, bookmarks: true, comments: true } },
+  comments: { include: { uploadedBy: userSummary } }
 };
 
 const discussionInclude = {
@@ -171,6 +172,8 @@ export const getFacultyProfileById = handle(async (req) => {
 export const createFacultyProfile = handle(async (req) => {
   const { researchAreaIds, ...data } = req.body;
   if (!data.name || !data.slug) throw fail(400, 'Name and slug are required.');
+  if (data.closingDate) data.closingDate = new Date(data.closingDate);
+  if (data.openings !== undefined) data.openings = parseInt(data.openings, 10) || 0;
   const profile = await prisma.facultyProfile.create({
     data: { ...data, researchAreas: { create: areaLinks(ids(researchAreaIds)) } },
     include: facultyInclude
@@ -182,6 +185,9 @@ export const updateFacultyProfile = handle(async (req) => {
   const id = parseId(req.params.id);
   const { researchAreaIds, id: ignoredId, ...data } = req.body;
   if (researchAreaIds !== undefined) data.researchAreas = replaceAreas(ids(researchAreaIds));
+  if (data.closingDate === '') data.closingDate = null;
+  else if (data.closingDate) data.closingDate = new Date(data.closingDate);
+  if (data.openings !== undefined) data.openings = parseInt(data.openings, 10) || 0;
   const profile = await prisma.facultyProfile.update({ where: { id }, data, include: facultyInclude });
   return { data: profile };
 });
@@ -266,6 +272,12 @@ export const deleteResearchExperience = handle(async (req) => {
   }
   await prisma.studentResearchExperience.delete({ where: { id } });
   return { message: 'Research experience deleted.' };
+});
+
+export const deleteResearchExperienceComment = handle(async (req) => {
+  const id = parseId(req.params.id);
+  await prisma.studentResearchExperienceComment.delete({ where: { id } });
+  return { message: 'Comment deleted.' };
 });
 
 export const bulkImportFacultyProfiles = handle(async (req) => {

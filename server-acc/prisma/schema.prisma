@@ -42,6 +42,7 @@ model User {
   researchExperienceBookmarks ResearchExperienceBookmark[]
   researchDiscussionVotes ResearchDiscussionVote[]
   researchReplyVotes     ResearchReplyVote[]
+  researchExperienceComments StudentResearchExperienceComment[]
   @@schema("public")
 }
 
@@ -315,7 +316,14 @@ model FacultyProfile {
   photoURL      String?
   website       String?
   biography     String?  @db.Text
+  profileInfo   String?  @db.Text
   publications  String?  @db.Text
+  openings      Int      @default(0)
+  closingDate   DateTime?
+  requirement   String?  @db.Text
+  googleScholarLink String?
+  linkedinLink  String?
+  otherLinks    Json?
   isActive      Boolean  @default(true)
   profileViewCount Int   @default(0)
 
@@ -360,6 +368,7 @@ model StudentResearchExperience {
   researchAreas StudentResearchExperienceResearchArea[]
   likes         ResearchExperienceLike[]
   bookmarks     ResearchExperienceBookmark[]
+  comments      StudentResearchExperienceComment[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -374,6 +383,20 @@ model StudentResearchExperienceResearchArea {
   researchArea ResearchArea              @relation(fields: [researchAreaId], references: [id], onDelete: Cascade)
 
   @@id([experienceId, researchAreaId])
+  @@schema("research_vault")
+}
+
+model StudentResearchExperienceComment {
+  id           Int      @id @default(autoincrement())
+  content      String   @db.Text
+  experienceId Int
+  uploadedById Int
+
+  experience   StudentResearchExperience @relation(fields: [experienceId], references: [id], onDelete: Cascade)
+  uploadedBy   User                      @relation(fields: [uploadedById], references: [id])
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
   @@schema("research_vault")
 }
 

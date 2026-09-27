@@ -2,10 +2,10 @@ import { useCallback, useEffect, useState } from 'react';
 import { adminApi } from '../../api/researchVaultAdminApi';
 import AdminTable from './components/AdminTable';
 import ConfirmDialog from './components/ConfirmDialog';
-import { Plus, Pencil, Trash2, Eye, Download } from 'lucide-react';
+import { Plus, Pencil, Trash2, Eye, Download, X, Globe, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-const RESOURCE_TYPES = ['GUIDE', 'SOP_WRITING', 'COLD_EMAILING', 'PHD_APPLICATIONS', 'GRANT_WRITING', 'OTHER'];
+const RESOURCE_TYPES = ['GUIDE', 'SOP_WRITING', 'COLD_EMAILING', 'PHD_APPLICATIONS', 'GRANT_WRITING', 'LOR', 'OTHER'];
 
 function ResourceForm({ resource, areas, onClose, onSaved }) {
   const isEdit = !!resource;
@@ -18,6 +18,15 @@ function ResourceForm({ resource, areas, onClose, onSaved }) {
     researchAreaIds: resource?.researchAreas?.map(ra => ra.researchArea.id) || [],
   });
   const [saving, setSaving] = useState(false);
+
+  // Close on Escape key
+  useEffect(() => {
+    const handleEsc = (e) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, [onClose]);
 
   const toggle = (id) => setForm(f => ({
     ...f,
@@ -40,40 +49,138 @@ function ResourceForm({ resource, areas, onClose, onSaved }) {
     }
   };
 
+  const inputClasses = "w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm text-slate-900 focus:border-emerald-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-200 transition-all";
+  const labelClasses = "mb-1 block text-xs font-semibold text-slate-700 uppercase tracking-wide";
+
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 px-4 py-8">
-      <div className="w-full max-w-lg rounded-2xl border border-slate-200 bg-white shadow-2xl">
-        <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
-          <h2 className="text-base font-bold text-slate-900">{isEdit ? 'Edit Resource' : 'Add Resource'}</h2>
-          <button onClick={onClose} className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 transition-colors"><Plus size={16} className="rotate-45" /></button>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
+      <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative w-full max-w-lg rounded-2xl border border-slate-200 bg-white shadow-2xl flex flex-col max-h-full">
+        
+        {/* Header */}
+        <div className="flex items-center justify-between border-b border-slate-200 bg-white px-6 py-4 shrink-0 rounded-t-2xl">
+          <h2 className="text-lg font-bold text-slate-900">{isEdit ? 'Edit Resource' : 'Add Resource'}</h2>
+          <button 
+            type="button"
+            onClick={onClose} 
+            className="rounded-full p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors focus:outline-none focus:ring-2 focus:ring-slate-200"
+            aria-label="Close modal"
+          >
+            <X size={18} />
+          </button>
         </div>
-        <form onSubmit={submit} className="p-6 space-y-4">
-          <div><label className="label-xs">Title *</label>
-            <input value={form.title} onChange={e => setForm(f => ({...f, title: e.target.value}))} required className="input-sm" /></div>
-          <div><label className="label-xs">Type</label>
-            <select value={form.resourceType} onChange={e => setForm(f => ({...f, resourceType: e.target.value}))} className="input-sm">
-              {RESOURCE_TYPES.map(t => <option key={t} value={t}>{t.replace(/_/g, ' ')}</option>)}
-            </select></div>
-          <div><label className="label-xs">External URL</label>
-            <input type="url" value={form.url} onChange={e => setForm(f => ({...f, url: e.target.value}))} className="input-sm" /></div>
-          <div><label className="label-xs">Description</label>
-            <textarea rows={2} value={form.description} onChange={e => setForm(f => ({...f, description: e.target.value}))} className="input-sm resize-none" /></div>
-          <div>
-            <label className="label-xs">Research Areas</label>
-            <div className="flex flex-wrap gap-2 mt-1">
-              {(areas || []).map(a => {
-                const sel = form.researchAreaIds.includes(a.id);
-                return <button key={a.id} type="button" onClick={() => toggle(a.id)} className={`rounded-full border px-3 py-1 text-xs font-semibold transition-all ${sel ? 'border-emerald-600 bg-emerald-700 text-white' : 'border-slate-200 bg-white text-slate-600 hover:border-emerald-400'}`}>{a.name}</button>;
-              })}
+
+        {/* Body */}
+        <div className="flex-1 overflow-y-auto min-h-0 p-6">
+          <form id="resource-form" onSubmit={submit} className="space-y-5">
+            <div>
+              <label className={labelClasses}>Title <span className="text-rose-500">*</span></label>
+              <input 
+                value={form.title} 
+                onChange={e => setForm(f => ({...f, title: e.target.value}))} 
+                required 
+                placeholder="Enter resource title..."
+                className={inputClasses} 
+              />
             </div>
-          </div>
-          <div className="flex justify-end gap-3 pt-2 border-t border-slate-100">
-            <button type="button" onClick={onClose} className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">Cancel</button>
-            <button type="submit" disabled={saving} className="rounded-xl bg-emerald-700 px-5 py-2 text-sm font-semibold text-white hover:bg-emerald-800 disabled:opacity-60">
-              {saving ? 'Saving…' : isEdit ? 'Save changes' : 'Create'}
-            </button>
-          </div>
-        </form>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              <div>
+                <label className={labelClasses}>Type</label>
+                <div className="relative">
+                  <select 
+                    value={form.resourceType} 
+                    onChange={e => setForm(f => ({...f, resourceType: e.target.value}))} 
+                    className={`${inputClasses} appearance-none pr-8 cursor-pointer`}
+                  >
+                    {RESOURCE_TYPES.map(t => <option key={t} value={t}>{t.replace(/_/g, ' ')}</option>)}
+                  </select>
+                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-500">
+                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label className={labelClasses}>External URL</label>
+                <div className="relative">
+                  <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+                    <Globe size={14} />
+                  </div>
+                  <input 
+                    type="url" 
+                    value={form.url} 
+                    onChange={e => setForm(f => ({...f, url: e.target.value}))} 
+                    placeholder="https://example.com"
+                    className={`${inputClasses} pl-9`} 
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <label className={labelClasses}>Description</label>
+              <textarea 
+                rows={3} 
+                value={form.description} 
+                onChange={e => setForm(f => ({...f, description: e.target.value}))} 
+                placeholder="Briefly describe this resource..."
+                className={`${inputClasses} resize-none`} 
+              />
+            </div>
+
+            <div>
+              <label className={labelClasses}>Research Areas</label>
+              <div className="flex flex-wrap gap-2 mt-2">
+                {(!areas || areas.length === 0) && (
+                  <span className="text-sm text-slate-500 italic py-1">No research areas available.</span>
+                )}
+                {(areas || []).map(a => {
+                  const sel = form.researchAreaIds.includes(a.id);
+                  return (
+                    <button 
+                      key={a.id} 
+                      type="button" 
+                      onClick={() => toggle(a.id)} 
+                      className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-all focus:outline-none focus:ring-2 focus:ring-emerald-200 ${
+                        sel 
+                        ? 'bg-blue-700 text-white border-blue-800 shadow-sm' 
+                        : 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100 hover:border-blue-300'
+                      }`}
+                    >
+                      {a.name}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </form>
+        </div>
+
+        {/* Footer */}
+        <div className="flex items-center justify-end gap-3 border-t border-slate-200 bg-slate-50 px-6 py-4 shrink-0">
+          <button 
+            type="button" 
+            onClick={onClose} 
+            disabled={saving}
+            className="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-200 disabled:opacity-50 transition-all"
+          >
+            Cancel
+          </button>
+          <button 
+            type="submit" 
+            form="resource-form"
+            disabled={saving} 
+            className="flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 disabled:opacity-70 transition-all"
+          >
+            {saving ? (
+              <>
+                <Loader2 size={16} className="animate-spin" />
+                <span>Saving...</span>
+              </>
+            ) : isEdit ? 'Save changes' : 'Create resource'}
+          </button>
+        </div>
       </div>
     </div>
   );

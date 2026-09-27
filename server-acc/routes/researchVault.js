@@ -10,6 +10,7 @@ import {
     createResearchExperience,
     updateResearchExperience,
     deleteResearchExperience,
+    deleteResearchExperienceComment,
     getResearchDiscussions,
     getQuestionList,
     getQuestionDetail,
@@ -91,6 +92,7 @@ router.post('/faculty/bulk-import', checkAuth, checkResearchAdmin, bulkImportFac
 router.put('/faculty/:id', checkAuth, checkResearchAdmin, updateFacultyProfile);
 router.delete('/faculty/:id', checkAuth, checkResearchAdmin, deleteFacultyProfile);
 router.delete('/experiences/:id', checkAuth, checkResearchAdmin, deleteResearchExperience);
+router.delete('/experience-comments/:id', checkAuth, checkResearchAdmin, deleteResearchExperienceComment);
 router.delete('/discussions/:id', checkAuth, checkResearchAdmin, deleteResearchDiscussion);
 router.post('/resources', checkAuth, checkResearchAdmin, createResearchResource);
 router.put('/resources/:id', checkAuth, checkResearchAdmin, updateResearchResource);
