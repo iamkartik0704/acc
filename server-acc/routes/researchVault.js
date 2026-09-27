@@ -42,7 +42,8 @@ import {
     createOpenPosition,
     updateOpenPosition,
     deleteOpenPosition,
-    getResearchAnalytics
+    getResearchAnalytics,
+    bulkImportFacultyProfiles
 } from '../controllers/researchVault.js';
 import { checkAuth } from '../middlewares/checkAuth.js';
 import { checkResearchAdmin } from '../middlewares/checkResearchAdmin.js';
@@ -86,6 +87,7 @@ router.delete('/follow/area/:id', checkAuth, unfollowResearchArea);
 
 // Admin-protected routes
 router.post('/faculty', checkAuth, checkResearchAdmin, createFacultyProfile);
+router.post('/faculty/bulk-import', checkAuth, checkResearchAdmin, bulkImportFacultyProfiles);
 router.put('/faculty/:id', checkAuth, checkResearchAdmin, updateFacultyProfile);
 router.delete('/faculty/:id', checkAuth, checkResearchAdmin, deleteFacultyProfile);
 router.delete('/experiences/:id', checkAuth, checkResearchAdmin, deleteResearchExperience);

@@ -38,7 +38,7 @@ import EditScholarship from "./pages/FinanceVault/admin/EditScholarship.jsx";
 import LevelUp from "./pages/student/LevelUp.jsx";
 import ManageRoadmap from "./pages/admin/ManageRoadmap.jsx";
 import ResearchVault from "./pages/ResearchVault/index.jsx";
-import ResearchVaultAdmin from "./pages/ResearchVault/ResearchVaultAdmin.jsx";
+import ResearchVaultAdmin from "./pages/ResearchVaultAdmin/index.jsx";
 import ResearchQuestionList from "./pages/ResearchVault/ResearchQuestionList.jsx";
 import ResearchQuestionDetail from "./pages/ResearchVault/ResearchQuestionDetail.jsx";
 const AppRoutes = () => {

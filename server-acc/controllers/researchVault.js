@@ -202,9 +202,13 @@ export const getResearchExperiences = handle(async (req) => {
   return { data, page, limit, total, totalPages: Math.ceil(total / limit) };
 });
 
-export const getResearchModerationQueue = handle(async () => {
+export const getResearchModerationQueue = handle(async (req) => {
+  const validStatuses = ['DRAFT', 'PUBLISHED', 'REJECTED'];
+  const status = validStatuses.includes(req.query.status?.toUpperCase())
+    ? req.query.status.toUpperCase()
+    : 'DRAFT';
   const data = await prisma.studentResearchExperience.findMany({
-    where: { status: 'DRAFT' },
+    where: { status },
     include: experienceInclude,
     orderBy: { createdAt: 'asc' }
   });
@@ -250,8 +254,85 @@ export const updateResearchExperience = handle(async (req) => {
 });
 
 export const deleteResearchExperience = handle(async (req) => {
-  await prisma.studentResearchExperience.delete({ where: { id: parseId(req.params.id) } });
+  const id = parseId(req.params.id);
+  const { reason } = req.body || {};
+  // If a rejection reason is provided, soft-reject instead of hard-delete so the student can see why.
+  if (reason && typeof reason === 'string' && reason.trim()) {
+    await prisma.studentResearchExperience.update({
+      where: { id },
+      data: { status: 'REJECTED', rejectionReason: reason.trim() }
+    });
+    return { message: 'Research experience rejected.' };
+  }
+  await prisma.studentResearchExperience.delete({ where: { id } });
   return { message: 'Research experience deleted.' };
+});
+
+export const bulkImportFacultyProfiles = handle(async (req) => {
+  const { rows } = req.body;
+  if (!Array.isArray(rows) || rows.length === 0) throw fail(400, 'rows array is required.');
+
+  // Load all known research area names/slugs for validation
+  const allAreas = await prisma.researchArea.findMany({ select: { id: true, name: true, slug: true } });
+  const areaByName = new Map(allAreas.map(a => [a.name.toLowerCase(), a]));
+  const areaBySlug = new Map(allAreas.map(a => [a.slug.toLowerCase(), a]));
+
+  const created = [];
+  const skipped = [];
+
+  for (const [index, row] of rows.entries()) {
+    const rowNum = index + 1;
+    if (!row.name || !row.slug) {
+      skipped.push({ row: rowNum, reason: 'Missing required fields: name, slug', data: row });
+      continue;
+    }
+
+    // Resolve research area tags
+    const rawAreas = Array.isArray(row.researchAreas)
+      ? row.researchAreas
+      : (typeof row.researchAreas === 'string' ? row.researchAreas.split(',').map(s => s.trim()).filter(Boolean) : []);
+
+    const resolvedAreaIds = [];
+    const unmatchedAreas = [];
+    for (const tag of rawAreas) {
+      const lower = tag.toLowerCase();
+      const area = areaByName.get(lower) || areaBySlug.get(lower);
+      if (area) resolvedAreaIds.push(area.id);
+      else unmatchedAreas.push(tag);
+    }
+
+    if (unmatchedAreas.length > 0) {
+      skipped.push({ row: rowNum, reason: `Unmatched research areas: ${unmatchedAreas.join(', ')}`, data: row });
+      continue;
+    }
+
+    try {
+      const profile = await prisma.facultyProfile.create({
+        data: {
+          name: row.name,
+          slug: row.slug,
+          designation: row.designation || null,
+          department: row.department || null,
+          email: row.email || null,
+          phone: row.phone || null,
+          website: row.website || null,
+          biography: row.biography || null,
+          publications: row.publications || null,
+          researchAreas: { create: areaLinks(resolvedAreaIds) }
+        },
+        include: facultyInclude
+      });
+      created.push(profile);
+    } catch (err) {
+      const reason = err.code === 'P2002' ? 'Slug already exists' : err.message;
+      skipped.push({ row: rowNum, reason, data: row });
+    }
+  }
+
+  return {
+    status: 207,
+    data: { created: created.length, skipped: skipped.length, skippedRows: skipped }
+  };
 });
 
 export const getResearchDiscussions = handle(async (req) => {

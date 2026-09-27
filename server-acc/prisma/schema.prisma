@@ -350,8 +350,9 @@ model StudentResearchExperience {
   prerequisites  String?
   keyLearnings   String?
   outcome        String?
-  status         ContentStatus @default(DRAFT)
-  facultyId      Int?
+  status           ContentStatus @default(DRAFT)
+  rejectionReason  String?
+  facultyId        Int?
 
   faculty  FacultyProfile?               @relation(fields: [facultyId], references: [id])
   uploadedById Int
